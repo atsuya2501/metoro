@@ -222,28 +222,40 @@
   .zoom-cell-64.lit  { background:var(--clr-64) !important; border-color:var(--clr-64) !important; box-shadow:0 0 10px rgba(74,170,132,.9); }
   .zoom-cell-64.tap-flash { background:rgba(74,170,132,0.4) !important; }
 
+  /* 6-tuplet zoom cell: 6 per beat */
+  .zoom-cell-6 {
+    width:calc(16.6666% - 4px); height:68px; border-radius:4px;
+    background:var(--surface); border:2px solid var(--border);
+    cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent;
+    transition: background 0.05s, border-color 0.05s, box-shadow 0.05s;
+    display:flex; align-items:flex-end; justify-content:center; padding-bottom:5px;
+    flex-shrink:0;
+  }
+  .zoom-cell-6 span { font-size:8px; color:var(--muted); }
+  .zoom-cell-6.on   { background:var(--on-6); border-color:var(--clr-6); }
+  .zoom-cell-6.on span { color:var(--clr-6); }
+  .zoom-cell-6.lit  { background:var(--clr-6) !important; border-color:var(--clr-6) !important; box-shadow:0 0 12px rgba(212,136,106,.9); }
+  .zoom-cell-6.tap-flash { background:rgba(212,136,106,0.5) !important; }
+
   .zoom-hint { font-size:9px; color:var(--muted); letter-spacing:0.1em; }
 
-  /* ── Sub-row toggles ── */
-  .sub-toggles { display:flex; gap:7px; flex-wrap:wrap; margin-left:36px; }
-  .sub-toggle {
+  /* ── Sub-row action buttons (zoom 32 / 6 / 64 + clear), evenly distributed ── */
+  .sub-toggles { display:flex; gap:6px; margin-left:36px; }
+  .sub-btn {
+    flex:1 1 0; min-width:0;
     background:none; border:1px solid var(--border); color:var(--muted);
-    font-family:var(--mono); font-size:9px; letter-spacing:0.12em;
-    padding:4px 10px; border-radius:3px; cursor:pointer;
+    font-family:var(--mono); font-size:9px; letter-spacing:0.04em;
+    padding:6px 4px; border-radius:3px; cursor:pointer; text-align:center;
     touch-action:manipulation; -webkit-tap-highlight-color:transparent;
-    transition: all 0.1s;
+    transition: all 0.1s; white-space:nowrap;
   }
-  .sub-toggle.on-6  { border-color:var(--clr-6);  color:var(--clr-6);  background:var(--on-6);  }
-  .zoom-btn {
-    background:none; border:1px solid var(--border); color:var(--muted);
-    font-family:var(--mono); font-size:9px; letter-spacing:0.1em;
-    padding:4px 10px; border-radius:3px; cursor:pointer;
-    touch-action:manipulation; -webkit-tap-highlight-color:transparent;
-    transition:all 0.1s;
-  }
-  .zoom-btn:active { border-color:var(--clr-32); color:var(--clr-32); }
-  .zoom-btn-64 { border-color:var(--clr-64); color:var(--clr-64); background:var(--on-64); }
-  .zoom-btn-64:active { border-color:var(--clr-64); }
+  .sub-btn-32 { border-color:var(--clr-32); color:var(--clr-32); }
+  .sub-btn-32:active { background:var(--on-32); }
+  .sub-btn-6  { border-color:var(--clr-6);  color:var(--clr-6);  }
+  .sub-btn-6:active  { background:var(--on-6); }
+  .sub-btn-64 { border-color:var(--clr-64); color:var(--clr-64); }
+  .sub-btn-64:active { background:var(--on-64); }
+  .sub-btn-clear:active { border-color:var(--text); color:var(--text); }
 
   /* ── Play ── */
   .play-btn {
@@ -276,6 +288,11 @@
   .tap-bpm-btn:active { background:rgba(201,185,122,0.15); transform:scale(0.95); }
   .tap-bpm-btn.tapping { border-color:var(--clr-q); color:var(--clr-q); }
   .tap-hint { font-size:9px; color:var(--muted); letter-spacing:0.12em; }
+
+  /* ── Volume ── */
+  .vol-row { display:flex; align-items:center; gap:8px; margin-top:2px; }
+  .vol-label { font-size:9px; letter-spacing:0.18em; color:var(--muted); width:28px; }
+  #volSlider { width:120px; }
 </style>
 </head>
 <body>
@@ -297,6 +314,10 @@
   </div>
   <button class="tap-bpm-btn" id="tapBpmBtn">TAP</button>
   <div class="tap-hint" id="tapHint">リズムに合わせてタップ</div>
+  <div class="vol-row">
+    <span class="vol-label">VOL</span>
+    <input type="range" id="volSlider" min="0" max="100" value="80">
+  </div>
 </div>
 
 <!-- Time Signature -->
@@ -331,19 +352,12 @@
   </div>
   <div class="beat-hints" id="hints32"></div>
 
-  <div id="wrap6" style="display:none; flex-direction:column; gap:4px;">
-    <div class="grid-row">
-      <div class="grid-label">6連</div>
-      <div class="cells" id="cells6"></div>
-    </div>
-    <div class="beat-hints" id="hints6"></div>
-  </div>
-
-  <!-- 64th: zoom-only, no grid row -->
+  <!-- 6連・64分はズーム専用（メイングリッドなし） -->
   <div class="sub-toggles">
-    <button class="zoom-btn"   id="zoom32Btn">🔍 32分ズーム</button>
-    <button class="sub-toggle" id="toggle6">+ 6連グリッド</button>
-    <button class="zoom-btn zoom-btn-64" id="zoom64Btn">🔍 64分ズーム</button>
+    <button class="sub-btn sub-btn-32"    id="zoom32Btn">🔍 32分</button>
+    <button class="sub-btn sub-btn-6"     id="zoom6Btn">🔍 6連</button>
+    <button class="sub-btn sub-btn-64"    id="zoom64Btn">🔍 64分</button>
+    <button class="sub-btn sub-btn-clear" id="clearSubBtn">✕ クリア</button>
   </div>
 </div>
 
@@ -352,7 +366,7 @@
 <div class="legend">
   <div class="legend-item"><div class="ldot lq"></div>拍（ON/OFF可）</div>
   <div class="legend-item"><div class="ldot l32"></div>32分・タップON</div>
-  <div class="legend-item"><div class="ldot l6"></div>6連・タップON</div>
+  <div class="legend-item"><div class="ldot l6"></div>6連・ズームのみ</div>
   <div class="legend-item"><div class="ldot l64"></div>64分・ズームのみ</div>
 </div>
 
@@ -399,9 +413,10 @@ const DEN_OPTIONS = [2, 4, 8];
 // ── Runtime state ──
 let bpm = 80, playing = false;
 let qOn = true;   // quarter note on/off
-let show6 = false;
-let zoomMode = '32';  // '32' or '64'
+let zoomMode = '32';  // '32' | '6' | '64'
 let zoomBeat = 0;
+let master = null;    // master gain (volume) node
+let vol = 0.8;        // 0..1
 
 // on/off arrays — sized for max possible beats (12) × per-beat cells
 const MAX_BEATS = 12;
@@ -409,6 +424,36 @@ let on32 = [];
 let on6  = [];
 let on64 = [];
 let onQ  = [];   // per-beat on/off for quarter notes
+
+// ── Persistence (localStorage) ──
+const STORE_KEY = 'subdivMetro.v1';
+let savedArrays = null;   // grid arrays from a previous session, applied after resetArrays()
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (typeof s.bpm   === 'number') bpm   = Math.max(30, Math.min(240, s.bpm));
+    if (typeof s.tsNum === 'number') tsNum = Math.max(1, Math.min(12, s.tsNum));
+    if (DEN_OPTIONS.includes(s.tsDen)) tsDen = s.tsDen;
+    if (typeof s.vol   === 'number') vol   = Math.max(0, Math.min(1, s.vol));
+    savedArrays = { onQ: s.onQ, on32: s.on32, on6: s.on6, on64: s.on64 };
+  } catch (e) { /* corrupt or unavailable storage — start fresh */ }
+}
+function copyInto(target, src) {
+  if (!Array.isArray(src)) return;
+  for (let i = 0; i < target.length && i < src.length; i++) target[i] = !!src[i];
+}
+let saveTimer = null;
+function saveState() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify({ bpm, tsNum, tsDen, vol, onQ, on32, on6, on64 }));
+    } catch (e) { /* storage full / unavailable — ignore */ }
+  }, 150);
+}
 
 function resetArrays() {
   const total32 = tsNum * PER_BEAT_32;
@@ -419,7 +464,17 @@ function resetArrays() {
   on64 = new Array(total64).fill(false);
   onQ  = new Array(tsNum).fill(true);   // all beats ON by default
 }
+
+loadState();
 resetArrays();
+// restore saved grid contents (sized to current time signature)
+if (savedArrays) {
+  copyInto(onQ,  savedArrays.onQ);
+  copyInto(on32, savedArrays.on32);
+  copyInto(on6,  savedArrays.on6);
+  copyInto(on64, savedArrays.on64);
+  savedArrays = null;
+}
 
 let BASE = tsNum * BEAT_STEPS;  // total steps per measure
 
@@ -431,37 +486,55 @@ function getCtx() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   return audioCtx;
 }
-
-function snap(time, freq, gainPeak, decay) {
+function getMaster() {
   const ctx = getCtx();
-  const bufLen = Math.ceil(ctx.sampleRate * decay * 1.3);
-  const buf = ctx.createBuffer(1, bufLen, ctx.sampleRate);
-  const d = buf.getChannelData(0);
-  for (let i=0;i<bufLen;i++) d[i]=Math.random()*2-1;
-  const ns=ctx.createBufferSource(); ns.buffer=buf;
-  const nf=ctx.createBiquadFilter(); nf.type='bandpass'; nf.frequency.value=freq*1.4; nf.Q.value=3;
-  const ng=ctx.createGain();
-  ng.gain.setValueAtTime(gainPeak*0.55,time);
-  ng.gain.exponentialRampToValueAtTime(0.0001,time+decay*0.32);
-  ns.connect(nf); nf.connect(ng); ng.connect(ctx.destination);
-  ns.start(time); ns.stop(time+decay*0.36);
-
-  const osc=ctx.createOscillator(); osc.type='sine';
-  osc.frequency.setValueAtTime(freq*2.9,time);
-  osc.frequency.exponentialRampToValueAtTime(freq*0.52,time+decay*0.16);
-  const og=ctx.createGain();
-  og.gain.setValueAtTime(0,time);
-  og.gain.linearRampToValueAtTime(gainPeak,time+0.0007);
-  og.gain.exponentialRampToValueAtTime(0.0001,time+decay);
-  const hpf=ctx.createBiquadFilter(); hpf.type='highpass'; hpf.frequency.value=180;
-  osc.connect(hpf); hpf.connect(og); og.connect(ctx.destination);
-  osc.start(time); osc.stop(time+decay+0.003);
+  if (!master) { master = ctx.createGain(); master.gain.value = vol; master.connect(ctx.destination); }
+  return master;
+}
+function setVol(v) {
+  vol = Math.max(0, Math.min(1, v));
+  if (master) master.gain.setTargetAtTime(vol, getCtx().currentTime, 0.01);
 }
 
-const beatQ  =(t,first)=>snap(t,first?1400:1000,first?0.88:0.70,first?0.038:0.030);
-const beat32 =(t)=>snap(t,680,0.52,0.019);
-const beat6  =(t)=>snap(t,520,0.46,0.019);
-const beat64 =(t)=>snap(t,400,0.32,0.013);
+// Unified, sharp metronome click.
+// All subdivisions share the SAME envelope shape + transient, and differ
+// only in pitch (freq) and level (gain) so the family sounds consistent.
+//   - tonal body: a near-pure sine with a tiny downward chirp (keeps pitch identity, no "boing")
+//   - 0.5ms attack + short exponential decay  → crisp, punchy
+//   - a few ms of high-passed noise transient  → adds the sharp "tick" edge
+function click(time, freq, gain, decay) {
+  const ctx = getCtx();
+  const out = getMaster();
+
+  // tonal body
+  const osc = ctx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(freq * 1.18, time);
+  osc.frequency.exponentialRampToValueAtTime(freq, time + decay * 0.6);
+  const og = ctx.createGain();
+  og.gain.setValueAtTime(0.0001, time);
+  og.gain.exponentialRampToValueAtTime(gain, time + 0.0005);     // ~0.5ms attack
+  og.gain.exponentialRampToValueAtTime(0.0001, time + decay);
+  osc.connect(og); og.connect(out);
+  osc.start(time); osc.stop(time + decay + 0.01);
+
+  // high-passed noise transient for crisp edge
+  const tlen = Math.ceil(ctx.sampleRate * 0.004);
+  const buf = ctx.createBuffer(1, tlen, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < tlen; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / tlen);
+  const ns = ctx.createBufferSource(); ns.buffer = buf;
+  const hp = ctx.createBiquadFilter();
+  hp.type = 'highpass'; hp.frequency.value = Math.max(1600, freq * 1.4);
+  const ng = ctx.createGain(); ng.gain.value = gain * 0.45;
+  ns.connect(hp); hp.connect(ng); ng.connect(out);
+  ns.start(time); ns.stop(time + 0.006);
+}
+
+const beatQ  =(t,first)=>click(t,first?1800:1400,first?0.95:0.72,first?0.030:0.028);
+const beat32 =(t)=>click(t,1050,0.50,0.022);
+const beat6  =(t)=>click(t, 880,0.50,0.022);
+const beat64 =(t)=>click(t, 700,0.40,0.018);
 
 // ── Tap helper ──
 function tappable(el, fn) {
@@ -487,6 +560,7 @@ function buildQ() {
     tappable(c,()=>{
       onQ[idx]=!onQ[idx];
       c.classList.toggle('off',!onQ[idx]);
+      saveState();
     });
     el.appendChild(c);
   }
@@ -496,12 +570,13 @@ function buildTapGrid(containerId, cls, totalCells, beatSize, onArr, hintId) {
   const el=document.getElementById(containerId); el.innerHTML='';
   for(let i=0;i<totalCells;i++){
     const c=document.createElement('div');
-    c.className=`cell-tap ${cls}`+(i%beatSize===0?' beat-start':'');
+    c.className=`cell-tap ${cls}`+(i%beatSize===0?' beat-start':'')+(onArr[i]?' on':'');
     const idx=i;
     tappable(c,()=>{
       onArr[idx]=!onArr[idx];
       c.classList.toggle('on',onArr[idx]);
       if(zoomMode==='32'&&containerId==='cells32') refreshZoom();
+      saveState();
     });
     el.appendChild(c);
   }
@@ -519,8 +594,7 @@ function rebuildGrids() {
   BASE = tsNum * BEAT_STEPS;
   buildQ();
   buildTapGrid('cells32','cell-32', tsNum*PER_BEAT_32, PER_BEAT_32, on32, 'hints32');
-  buildTapGrid('cells6', 'cell-6',  tsNum*PER_BEAT_6,  PER_BEAT_6,  on6,  'hints6');
-  // 64 has no main grid
+  // 6連 and 64分 are zoom-only — no main grid
   if(zoomBeat >= tsNum) zoomBeat = tsNum-1;
 }
 
@@ -534,7 +608,9 @@ function setTimeSig(num, den) {
   document.getElementById('tsDen').textContent = tsDen;
   resetArrays();
   rebuildGrids();
+  if(document.getElementById('zoomOverlay').classList.contains('open')) buildZoom();
   if(playing){ stopMetronome(); startMetronome(); }
+  saveState();
 }
 
 tappable(document.getElementById('numUp'), ()=>setTimeSig(tsNum+1, tsDen));
@@ -559,15 +635,24 @@ tappable(document.getElementById('qToggle'),()=>{
   const btn=document.getElementById('qToggle');
   btn.textContent=newVal?'♩ 全ON':'♩ 全OFF';
   btn.classList.toggle('off',!newVal);
+  saveState();
 });
 
-// ── Zoom (shared overlay for 32 and 64) ──
+// ── Zoom (shared overlay for 32 / 6 / 64) ──
+// Each mode shares one overlay; they differ only in cells-per-beat, the
+// backing on/off array, the cell CSS class, and whether the main 32nd grid
+// needs to mirror edits. arr is a getter because resetArrays() reallocates.
+const ZOOM_CFG = {
+  '32': { per:PER_BEAT_32, arr:()=>on32, cls:'zoom-cell-32', title:'32分　ズームビュー', mirror32:true },
+  '6' : { per:PER_BEAT_6,  arr:()=>on6,  cls:'zoom-cell-6',  title:'6連　ズームビュー' },
+  '64': { per:PER_BEAT_64, arr:()=>on64, cls:'zoom-cell-64', title:'64分　ズームビュー' },
+};
+const zoomOpen = ()=>document.getElementById('zoomOverlay').classList.contains('open');
+
 function openZoom(mode) {
   zoomMode=mode;
-  document.getElementById('zoomTitle').textContent =
-    mode==='32'?'32分　ズームビュー':'64分　ズームビュー';
-  document.getElementById('zoomHint').textContent =
-    mode==='32'?'セルをタップして ON / OFF':'セルをタップして ON / OFF';
+  document.getElementById('zoomTitle').textContent = ZOOM_CFG[mode].title;
+  document.getElementById('zoomHint').textContent = 'セルをタップして ON / OFF';
   buildZoom();
   document.getElementById('zoomOverlay').classList.add('open');
 }
@@ -575,63 +660,56 @@ function openZoom(mode) {
 function buildZoom() {
   const el=document.getElementById('zoomCells'); el.innerHTML='';
   document.getElementById('zoomBeatLabel').textContent=`拍 ${zoomBeat+1} / ${tsNum}`;
-
-  if(zoomMode==='32'){
-    const perBeat=PER_BEAT_32; // 8
-    const offset=zoomBeat*perBeat;
-    for(let i=0;i<perBeat;i++){
-      const idx=offset+i;
-      const c=document.createElement('div');
-      c.className='zoom-cell-32'+(on32[idx]?' on':'');
-      const sp=document.createElement('span'); sp.textContent=i+1; c.appendChild(sp);
-      tappable(c,()=>{
-        on32[idx]=!on32[idx];
-        c.classList.toggle('on',on32[idx]);
+  const cfg=ZOOM_CFG[zoomMode];
+  const onArr=cfg.arr();
+  const offset=zoomBeat*cfg.per;
+  for(let i=0;i<cfg.per;i++){
+    const idx=offset+i;
+    const c=document.createElement('div');
+    c.className=cfg.cls+(onArr[idx]?' on':'');
+    const sp=document.createElement('span'); sp.textContent=i+1; c.appendChild(sp);
+    tappable(c,()=>{
+      onArr[idx]=!onArr[idx];
+      c.classList.toggle('on',onArr[idx]);
+      if(cfg.mirror32){
         const mc=document.getElementById('cells32').children;
-        mc[idx].classList.toggle('on',on32[idx]);
-      });
-      el.appendChild(c);
-    }
-  } else {
-    const perBeat=PER_BEAT_64; // 16
-    const offset=zoomBeat*perBeat;
-    for(let i=0;i<perBeat;i++){
-      const idx=offset+i;
-      const c=document.createElement('div');
-      c.className='zoom-cell-64'+(on64[idx]?' on':'');
-      const sp=document.createElement('span'); sp.textContent=i+1; c.appendChild(sp);
-      tappable(c,()=>{
-        on64[idx]=!on64[idx];
-        c.classList.toggle('on',on64[idx]);
-      });
-      el.appendChild(c);
-    }
+        if(mc[idx]) mc[idx].classList.toggle('on',onArr[idx]);
+      }
+      saveState();
+    });
+    el.appendChild(c);
   }
 }
 
 function refreshZoom() {
-  if(!document.getElementById('zoomOverlay').classList.contains('open')) return;
+  if(!zoomOpen()) return;
+  const cfg=ZOOM_CFG[zoomMode];
+  const onArr=cfg.arr();
+  const offset=zoomBeat*cfg.per;
   const el=document.getElementById('zoomCells');
-  if(zoomMode==='32'){
-    const offset=zoomBeat*PER_BEAT_32;
-    for(let i=0;i<PER_BEAT_32;i++) el.children[i].classList.toggle('on',on32[offset+i]);
-  } else {
-    const offset=zoomBeat*PER_BEAT_64;
-    for(let i=0;i<PER_BEAT_64;i++) el.children[i].classList.toggle('on',on64[offset+i]);
-  }
+  for(let i=0;i<cfg.per;i++) if(el.children[i]) el.children[i].classList.toggle('on',onArr[offset+i]);
 }
 
 function updateZoomDisplay(beatIdx, subIdx) {
-  if(!document.getElementById('zoomOverlay').classList.contains('open')) return;
+  if(!zoomOpen()) return;
   if(beatIdx!==zoomBeat) return;
   const el=document.getElementById('zoomCells');
   for(const c of el.children) c.classList.remove('lit');
-  if(zoomMode==='32'&&subIdx<PER_BEAT_32) el.children[subIdx].classList.add('lit');
-  if(zoomMode==='64'&&subIdx<PER_BEAT_64) el.children[subIdx].classList.add('lit');
+  if(subIdx<ZOOM_CFG[zoomMode].per && el.children[subIdx]) el.children[subIdx].classList.add('lit');
 }
 
 tappable(document.getElementById('zoom32Btn'),()=>openZoom('32'));
+tappable(document.getElementById('zoom6Btn'), ()=>openZoom('6'));
 tappable(document.getElementById('zoom64Btn'),()=>openZoom('64'));
+
+// ── Clear all subdivisions (32分以下を全OFF) ──
+tappable(document.getElementById('clearSubBtn'),()=>{
+  on32.fill(false); on6.fill(false); on64.fill(false);
+  for(const c of document.getElementById('cells32').children) c.classList.remove('on');
+  if(zoomOpen()) buildZoom();
+  saveState();
+});
+
 tappable(document.getElementById('zoomClose'),()=>document.getElementById('zoomOverlay').classList.remove('open'));
 tappable(document.getElementById('zoomPrev'),()=>{ zoomBeat=(zoomBeat+tsNum-1)%tsNum; buildZoom(); });
 tappable(document.getElementById('zoomNext'),()=>{ zoomBeat=(zoomBeat+1)%tsNum; buildZoom(); });
@@ -702,7 +780,6 @@ function stopMetronome(){
 function clearDisplay(){
   for(const c of document.getElementById('cellsQ').children)  c.classList.remove('lit','lit-a');
   for(const c of document.getElementById('cells32').children) c.classList.remove('lit');
-  for(const c of document.getElementById('cells6').children)  c.classList.remove('lit');
   const zc=document.getElementById('zoomCells');
   for(const c of zc.children) c.classList.remove('lit');
 }
@@ -711,11 +788,9 @@ function updateDisplay(step){
   if(step===displayStep) return; displayStep=step;
   const qC  =document.getElementById('cellsQ').children;
   const c32 =document.getElementById('cells32').children;
-  const c6  =document.getElementById('cells6').children;
 
   for(const c of qC)  c.classList.remove('lit','lit-a');
   for(const c of c32) c.classList.remove('lit');
-  for(const c of c6)  c.classList.remove('lit');
 
   const beatIdx  = Math.floor(step/BEAT_STEPS);
   const beatStep = step % BEAT_STEPS;
@@ -727,16 +802,9 @@ function updateDisplay(step){
   const idx32 = beatIdx*PER_BEAT_32 + Math.floor(beatStep/S32_I);
   if(c32[idx32]) c32[idx32].classList.add('lit');
 
-  // 6-tuplet
-  if(show6){
-    const idx6 = beatIdx*PER_BEAT_6 + Math.floor(beatStep/S6_I);
-    if(c6[idx6]) c6[idx6].classList.add('lit');
-  }
-
-  // zoom display
-  const sub32 = Math.floor(beatStep/S32_I);
-  const sub64 = Math.floor(beatStep/S64_I);
-  updateZoomDisplay(beatIdx, zoomMode==='32'?sub32:sub64);
+  // zoom display — step index depends on the active zoom mode
+  const I = zoomMode==='32'?S32_I : zoomMode==='6'?S6_I : S64_I;
+  updateZoomDisplay(beatIdx, Math.floor(beatStep/I));
 }
 
 // ── BPM ──
@@ -744,6 +812,7 @@ function setBpm(v){
   bpm=Math.max(30,Math.min(240,v));
   document.getElementById('bpmDisplay').textContent=bpm;
   document.getElementById('bpmSlider').value=bpm;
+  saveState();
 }
 document.getElementById('bpmSlider').addEventListener('input',e=>setBpm(+e.target.value));
 document.getElementById('btnM10').addEventListener('click',()=>setBpm(bpm-10));
@@ -758,15 +827,6 @@ tappable(playBtn,()=>{
   if(playing){playBtn.textContent='■';playBtn.classList.add('playing');startMetronome();}
   else        {playBtn.textContent='▶';playBtn.classList.remove('playing');stopMetronome();}
 });
-
-// ── 6-tuplet toggle ──
-tappable(document.getElementById('toggle6'),()=>{
-  show6=!show6;
-  document.getElementById('wrap6').style.display=show6?'flex':'none';
-  document.getElementById('toggle6').textContent=show6?'− 6連を隠す':'+ 6連グリッド';
-  document.getElementById('toggle6').classList.toggle('on-6',show6);
-});
-
 
 // ── Tap BPM ──
 let tapTimes = [];
@@ -800,6 +860,37 @@ tappable(document.getElementById('tapBpmBtn'), () => {
     document.getElementById('tapHint').textContent = 'もう1回タップ...';
   }
 });
+
+// ── Volume control ──
+const volSlider=document.getElementById('volSlider');
+volSlider.addEventListener('input',e=>{ setVol(+e.target.value/100); saveState(); });
+
+// ── Reflect loaded state into the UI ──
+function syncUI(){
+  document.getElementById('bpmDisplay').textContent=bpm;
+  document.getElementById('bpmSlider').value=bpm;
+  document.getElementById('tsNum').textContent=tsNum;
+  document.getElementById('tsDen').textContent=tsDen;
+  volSlider.value=Math.round(vol*100);
+  // quarter all-on/off button label
+  const allOn=onQ.every(v=>v);
+  const qBtn=document.getElementById('qToggle');
+  qBtn.textContent=allOn?'♩ 全ON':'♩ 全OFF';
+  qBtn.classList.toggle('off',!allOn);
+}
+syncUI();
+
+// ── Keyboard: space = play/stop ──
+window.addEventListener('keydown',e=>{
+  if(e.code==='Space' && e.target.tagName!=='INPUT'){
+    e.preventDefault();
+    playBtn.click();
+  }
+});
+
+// Resume the AudioContext on the first user gesture (some browsers start it suspended).
+function resumeAudio(){ const ctx=getCtx(); if(ctx.state==='suspended') ctx.resume(); }
+document.addEventListener('pointerdown',resumeAudio,{once:true});
 
 // ── Service Worker ──
 if('serviceWorker' in navigator){
