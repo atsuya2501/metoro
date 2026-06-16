@@ -47,6 +47,7 @@
   .bpm-row   { display:flex; align-items:baseline; gap:8px; }
   .bpm-display { font-size:80px; font-weight:700; line-height:1; letter-spacing:-0.04em; color:var(--text); }
   .bpm-unit    { font-size:11px; letter-spacing:0.25em; color:var(--muted); }
+  .bpm-unit-spacer { visibility:hidden; }   /* balances the unit so the number itself is centered */
   .bpm-controls { display:flex; align-items:center; }
   .bpm-btn {
     background:var(--surface); border:1px solid var(--border);
@@ -70,9 +71,14 @@
   }
 
   /* ── Time signature ── */
+  /* left-side / 4/4 display / right-side : equal flex sides keep 4/4 dead-center */
   .timesig-block {
     display:flex; align-items:center; gap:14px;
+    width:100%; max-width:340px;
   }
+  .ts-side { flex:1 1 0; display:flex; align-items:center; gap:14px; }
+  .ts-side-left  { justify-content:flex-end; }
+  .ts-side-right { justify-content:flex-start; }
   .timesig-label { font-size:9px; letter-spacing:0.15em; color:var(--muted); }
   .timesig-display {
     display:flex; flex-direction:column; align-items:center; gap:0;
@@ -109,6 +115,7 @@
   .grid-section { width:100%; max-width:600px; display:flex; flex-direction:column; gap:7px; }
   .grid-row { display:flex; align-items:center; gap:8px; }
   .grid-label { font-size:9px; color:var(--muted); width:28px; text-align:right; flex-shrink:0; letter-spacing:0.08em; }
+  .grid-spacer { text-align:left; }   /* mirrors the left label so cells stay centered */
   .cells { display:flex; gap:2px; flex:1; }
 
   /* Quarter */
@@ -147,7 +154,7 @@
   .zoom-row-label { font-size:9px; color:var(--muted); width:28px; text-align:right; flex-shrink:0; }
 
   /* beat hints row */
-  .beat-hints { display:flex; margin-left:36px; gap:2px; }
+  .beat-hints { display:flex; margin-left:36px; margin-right:36px; gap:2px; }
   .beat-hint  { flex:1; font-size:8px; color:var(--muted); padding-left:2px; }
 
   /* Q on/off toggle */
@@ -240,7 +247,7 @@
   .zoom-hint { font-size:9px; color:var(--muted); letter-spacing:0.1em; }
 
   /* ── Sub-row action buttons (zoom 32 / 6 / 64 + clear), evenly distributed ── */
-  .sub-toggles { display:flex; gap:6px; margin-left:36px; }
+  .sub-toggles { display:flex; gap:6px; margin-left:36px; margin-right:36px; }
   .sub-btn {
     flex:1 1 0; min-width:0;
     background:none; border:1px solid var(--border); color:var(--muted);
@@ -302,6 +309,7 @@
 <!-- BPM -->
 <div class="bpm-block">
   <div class="bpm-row">
+    <div class="bpm-unit bpm-unit-spacer" aria-hidden="true">BPM</div>
     <div class="bpm-display" id="bpmDisplay">80</div>
     <div class="bpm-unit">BPM</div>
   </div>
@@ -322,20 +330,24 @@
 
 <!-- Time Signature -->
 <div class="timesig-block">
-  <div class="timesig-label">拍子</div>
-  <div class="timesig-sep">
-    <div class="ts-arrow" id="numUp">▲</div>
-    <div class="ts-arrow" id="numDn">▼</div>
+  <div class="ts-side ts-side-left">
+    <div class="timesig-label">拍子</div>
+    <div class="timesig-sep">
+      <div class="ts-arrow" id="numUp">▲</div>
+      <div class="ts-arrow" id="numDn">▼</div>
+    </div>
   </div>
   <div class="timesig-display">
     <div class="timesig-num" id="tsNum">4</div>
     <div class="timesig-den" id="tsDen">4</div>
   </div>
-  <div class="timesig-sep">
-    <div class="ts-arrow" id="denUp">▲</div>
-    <div class="ts-arrow" id="denDn">▼</div>
+  <div class="ts-side ts-side-right">
+    <div class="timesig-sep">
+      <div class="ts-arrow" id="denUp">▲</div>
+      <div class="ts-arrow" id="denDn">▼</div>
+    </div>
+    <button class="q-toggle" id="qToggle">♩ 全ON</button>
   </div>
-  <button class="q-toggle" id="qToggle">♩ 全ON</button>
 </div>
 
 <!-- Main grid -->
@@ -344,11 +356,13 @@
   <div class="grid-row">
     <div class="grid-label" id="labelQ">♩</div>
     <div class="cells" id="cellsQ"></div>
+    <div class="grid-label grid-spacer"></div>
   </div>
 
   <div class="grid-row">
     <div class="grid-label">32</div>
     <div class="cells" id="cells32"></div>
+    <div class="grid-label grid-spacer"></div>
   </div>
   <div class="beat-hints" id="hints32"></div>
 
